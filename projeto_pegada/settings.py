@@ -120,7 +120,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
+PROMETHEUS_METRICS_EXPORT_PORT = 8001
 
 # Configurações do Redis e Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL')
