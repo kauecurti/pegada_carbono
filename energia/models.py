@@ -13,12 +13,12 @@ class ContaEnergia(models.Model):
     def calcular_pegada_de_carbono(self):
         # Fatores de emissão para diferentes tipos de fontes de energia (em kg CO2/kWh)
         fatores_emissao = {
-            'hidreletrica': 0.01,  # Hidrelétrica
+            'hidreletrica': 0.01,  # Hidrelétrica (baixo impacto de carbono)
             'termica': 0.4,        # Termelétrica (combustíveis fósseis)
-            'solar': 0.05,         # Energia Solar
-            'eolica': 0.02         # Energia Eólica
+            'solar': 0.05,         # Energia Solar (baixo impacto de carbono)
+            'eolica': 0.02         # Energia Eólica (baixo impacto de carbono)
         }
-        
+
         # Fator de emissão base, considerando a fonte de energia
         fator_emissao_base = fatores_emissao.get(self.fonte_energia.lower(), 0.092)  # Padrão: média nacional
 
@@ -26,17 +26,17 @@ class ContaEnergia(models.Model):
         if self.horario_consumo == 'pico':
             fator_emissao_base *= 1.2  # 20% maior em horários de pico
 
-        # Ajuste de localização (considerando hipotéticos coeficientes regionais)
+        # Ajuste de localização (considerando coeficientes regionais)
         coeficientes_localizacao = {
             'sudeste': 1.0,  # Normal
-            'nordeste': 0.8,  # Mais energia solar/eólica
+            'nordeste': 0.8,  # Mais energia solar/eólica (menor impacto)
             'sul': 1.1,  # Maior dependência de fontes fósseis no inverno
         }
         coeficiente_local = coeficientes_localizacao.get(self.localizacao.lower(), 1.0)
 
         # Ajuste por estação do ano (ex: mais consumo de eletricidade no inverno)
         if self.estacao_ano == 'inverno':
-            fator_emissao_base *= 1.15  # 15% maior no inverno
+            fator_emissao_base *= 1.15  # 15% maior no inverno devido à maior necessidade de aquecimento
 
         # Calculando a pegada de carbono ajustada
         self.pegada_de_carbono = self.consumo_kwh * fator_emissao_base * coeficiente_local

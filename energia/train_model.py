@@ -1,11 +1,14 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 import joblib
 
-# Exemplo de dados: você pode carregar seus dados reais aqui
-# dataframe = pd.read_csv('seus_dados.csv')
+# Exemplo de dados fictícios - substitua por seus dados reais
 data = {
     'consumo_kwh': [150, 300, 200, 450, 500],
     'localizacao': ['sudeste', 'nordeste', 'sul', 'sudeste', 'nordeste'],
@@ -17,26 +20,43 @@ data = {
 
 df = pd.DataFrame(data)
 
-# Transformando variáveis categóricas em variáveis dummy (one-hot encoding)
-df = pd.get_dummies(df, columns=['localizacao', 'fonte_energia', 'horario_consumo', 'estacao_ano'], drop_first=True)
+# Definir as variáveis categóricas e numéricas
+categorical_features = ['localizacao', 'fonte_energia', 'horario_consumo', 'estacao_ano']
+numerical_features = ['consumo_kwh']
 
-# Separando features (X) e target (y)
-X = df.drop('pegada_de_carbono', axis=1)
-y = df['pegada_de_carbono']
+# Pipelines para pré-processamento
+categorical_transformer = OneHotEncoder(drop='first')
+numerical_transformer = StandardScaler()
 
-# Dividindo os dados em treinamento e teste
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
 
-# Treinando o modelo
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+# Treinando com múltiplos modelos: Regressão Linear, Random Forest, Gradient Boosting
+models = {
+    'LinearRegression': LinearRegression(),
+    'RandomForest': RandomForestRegressor(),
+    'GradientBoosting': GradientBoostingRegressor()
+}
 
-# Fazendo previsões
-y_pred = model.predict(X_test)
+# Criar pipeline de pré-processamento seguido do modelo de machine learning
+for model_name, model in models.items():
+    pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
 
-# Avaliando o modelo
-mse = mean_squared_error(y_test, y_pred)
-print(f'Mean Squared Error: {mse}')
+    # Dividir os dados
+    X = df.drop('pegada_de_carbono', axis=1)
+    y = df['pegada_de_carbono']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Salvando o modelo
-joblib.dump(model, 'modelo_pegada_carbono.pkl')
+    # Treinar o modelo
+    pipeline.fit(X_train, y_train)
+
+    # Avaliação
+    y_pred = pipeline.predict(X_test)
+    mse = mean_squared_error(y_test, y_pred)
+    print(f'{model_name} MSE: {mse}')
+
+    # Salvar o modelo
+    joblib.dump(pipeline, f'modelo_pegada_carbono_{model_name}.pkl')

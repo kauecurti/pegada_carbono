@@ -122,13 +122,36 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-# Configurações do Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # O Redis será o broker de mensagens
+# Configurações do Redis e Celery
+CELERY_BROKER_URL = os.getenv('REDIS_URL')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'verificar_firebase_periodicamente': {
         'task': 'energia.tasks.verificar_firebase',
         'schedule': 60.0,  # Executa a cada 60 segundos
+    },
+}
+
+# Configuração do Prometheus
+PROMETHEUS_METRICS_EXPORT_PORT = 8001
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'projeto_pegada.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
